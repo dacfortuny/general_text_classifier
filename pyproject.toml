@@ -8,6 +8,7 @@ authors = ["Didac Fortuny <dacfortuny@gmail.com>"]
 python = "^3.8"
 
 [tool.poetry.dev-dependencies]
+jupyterlab = "^3.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
