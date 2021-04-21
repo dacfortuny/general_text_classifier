@@ -130,3 +130,9 @@ dmypy.json
 
 # Other
 .idea/
+
+# Data
+data/
+
+# Models
+models/
