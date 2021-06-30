@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "general_bert_classifier"
+name = "general_text_classifier"
 version = "0.1.0"
 description = ""
 authors = ["Didac Fortuny <dacfortuny@gmail.com>"]
