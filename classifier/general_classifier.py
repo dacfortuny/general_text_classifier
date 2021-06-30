@@ -2,16 +2,31 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from classifier.architecture import ClassifierArchitecture
 from sklearn.metrics import classification_report
 from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
 from transformers import AutoModel, AdamW
 
+from classifier.classifier_architecture import ClassifierArchitecture
+from classifier.classifier_dataset import ClassifierDataset
+
 
 class GeneralClassifier(object):
+    """
+    Class with the general classifier model.
+    """
 
-    def __init__(self, dataset, learning_rate, epochs, best_model_file, device, seed):
+    def __init__(self, dataset: ClassifierDataset, learning_rate: float, epochs: int, best_model_file: str,
+                 device: str):
+        """
+        Class initializer.
+        Args:
+            dataset: ClassifierDataset object with train, validation and test data.
+            learning_rate: Learning rate for the training.
+            epochs: Number of epochs to train.
+            best_model_file: Output path of the trained model.
+            device: Device in which perform the calculations.
+        """
 
         self.dataset = dataset
         self.bert_version = dataset.bert_version
@@ -23,23 +38,44 @@ class GeneralClassifier(object):
         self.optimizer = self.define_optimizer()
         self.loss_function = self.define_loss_function()
 
-    def define_architecture(self):
+    def define_architecture(self) -> ClassifierArchitecture:
+        """
+        Creates the final architecture of the classifier model.
+        Returns:
+            ClassifierArchitecture object with the architecture of the neural network.
+        """
         bert = AutoModel.from_pretrained(self.bert_version)
         for param in bert.parameters():
             param.requires_grad = False
         return ClassifierArchitecture(bert=bert, num_classes=len(self.dataset.classes))
 
-    def define_optimizer(self):
+    def define_optimizer(self) -> AdamW:
+        """
+        Creates the optimizer for the training.
+        Returns:
+            Optimizer object.
+        """
         return AdamW(self.model.parameters(), lr=self.learning_rate)
 
-    def define_loss_function(self):
+    def define_loss_function(self) -> nn.NLLLoss:
+        """
+        Creates the loss function for the training.
+        Returns:
+            Loss function.
+        """
         class_weights = compute_class_weight("balanced", np.unique(self.dataset.train_labels),
                                              self.dataset.train_labels)
         weights = torch.tensor(class_weights, dtype=torch.float)
         weights = weights.to(self.device)
         return nn.NLLLoss(weight=weights)
 
-    def train_epoch(self):
+    def _train_epoch(self) -> float:
+        """
+        Performs the training for one epoch. Updates the weights and returns the current loss.
+        Returns:
+            Average loss after training the epoch.
+        """
+        print("\nTraining...")
         self.model.train()
         train_dataloader = self.dataset.train_injector.dataloader
         total_loss = 0
@@ -56,7 +92,12 @@ class GeneralClassifier(object):
         average_loss = total_loss / len(train_dataloader)
         return average_loss
 
-    def evaluate_epoch(self):
+    def _evaluate_epoch(self) -> float:
+        """
+        Performs the validation for one epoch. Updates the weights and returns the current loss.
+        Returns:
+            Average loss of the validation set after training the epoch.
+        """
         print("\nEvaluating...")
         self.model.eval()
         validation_dataloader = self.dataset.validation_injector.dataloader
@@ -72,18 +113,26 @@ class GeneralClassifier(object):
         return average_loss
 
     def train(self):
+        """
+        Performs the complete training of the model.
+        """
         best_valid_loss = float("inf")
         for epoch in range(self.epochs):
             print(f"\n Epoch {epoch + 1} / {self.epochs}")
-            train_loss = self.train_epoch()
-            validation_loss = self.evaluate_epoch()
+            train_loss = self._train_epoch()
+            validation_loss = self._evaluate_epoch()
             if validation_loss < best_valid_loss:
                 best_valid_loss = validation_loss
                 torch.save(self.model.state_dict(), self.best_model_file)
             print(f"\nTraining Loss: {train_loss:.3f}")
             print(f"Validation Loss: {validation_loss:.3f}")
 
-    def predict(self):
+    def _predict(self) -> np.ndarray:
+        """
+        Perform predictions for the test dataset.
+        Returns:
+            Numpy array with predictions.
+        """
         self.model.eval()
         test_dataloader = self.dataset.test_injector.dataloader
         total_predictions = []
@@ -98,8 +147,11 @@ class GeneralClassifier(object):
         return total_predictions
 
     def generate_performance_report(self):
+        """
+        Prints a report based on the predictions of the test set.
+        """
         self.model.load_state_dict(torch.load(self.best_model_file))
-        predictions = self.predict()
+        predictions = self._predict()
         predictions_final = np.argmax(predictions, axis=1)
         test_labels = self.dataset.test_injector.tensor_datapack.labels
         print(classification_report(test_labels, predictions_final))
