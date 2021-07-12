@@ -29,3 +29,25 @@ To obtain a report of the performance of the model based on the data of the test
 ## Example
 
 An example of the usage of this library is found in [labs/classifier_dachs.py](https://github.com/dacfortuny/general_bert_classifier/blob/main/labs/classifier_dachs.py).
+
+## Run in Google Colab
+
+### Clone repository
+
+```
+from google.colab import drive
+drive.mount("/content/gdrive")
+cd gdrive/MyDrive
+!git clone https://github.com/dacfortuny/general_text_classifier.git
+```
+
+### Configure notebook
+
+Add these lines at the beginning of the notebook
+
+```
+from google.colab import drive
+drive.mount("/content/gdrive")
+cd gdrive/MyDrive/general_text_classifier
+!pip install transformers
+```
