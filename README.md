@@ -37,7 +37,11 @@ An example of the usage of this library is found in [labs/classifier_dachs.py](h
 ```
 from google.colab import drive
 drive.mount("/content/gdrive")
+```
+```
 cd gdrive/MyDrive
+```
+```
 !git clone https://github.com/dacfortuny/general_text_classifier.git
 ```
 
@@ -48,6 +52,10 @@ Add these lines at the beginning of the notebook
 ```
 from google.colab import drive
 drive.mount("/content/gdrive")
+```
+```
 cd gdrive/MyDrive/general_text_classifier
+```
+```
 !pip install transformers
 ```
