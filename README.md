@@ -59,3 +59,11 @@ cd gdrive/MyDrive/general_text_classifier
 ```
 !pip install transformers
 ```
+
+## TensorBoard
+
+To launch TensorBoard and see the performance of the models, launch:
+
+```
+tensorboard --logdir models/model_name
+```

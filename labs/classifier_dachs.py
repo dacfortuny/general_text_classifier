@@ -8,7 +8,7 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.11.3
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -35,17 +35,28 @@ from classifier.general_classifier import GeneralClassifier
 
 # ## Settings
 
-TRAIN_FILE = "data/dachs/Train_Hate_Messages.csv"
-TEST_FILE = "data/dachs/Test_Hate_Messages.csv"
+MODEL_NAME = "dachs"
+RUN_NAME = "20210802_07"
+
+TRAIN_FILE = "Train_Hate_Messages.csv"
+TEST_FILE = "Test_Hate_Messages.csv"
+
 SEED_SHUFFLE = 31
 VALIDATION_SIZE = 0.3
 BERT_VERSION = "bert-base-multilingual-cased"
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-5
 EPOCHS = 20
-BEST_MODEL_FILE = "models/dachs/best_model.pt"
 DEVICE = "cuda"
 SEED_TRAIN_VALIDATION_SPLIT = 31
+
+# ### Paths
+
+TRAIN_FILE_PATH = f"data/{MODEL_NAME}/{TRAIN_FILE}"
+TEST_FILE_PATH = f"data/{MODEL_NAME}/{TEST_FILE}"
+
+MODEL_FILE_PATH = f"models/{MODEL_NAME}/{RUN_NAME}/model.pt"
+MODEL_LOGS_PATH = f"models/{MODEL_NAME}/{RUN_NAME}"
 
 
 # ## Data
@@ -65,18 +76,19 @@ def prepare_data_dachs(data_file: str) -> pd.DataFrame:
     return df.sample(frac=1, random_state=SEED_SHUFFLE).reset_index(drop=True)
 
 
-df_train = prepare_data_dachs(TRAIN_FILE)
-df_test = prepare_data_dachs(TEST_FILE)
+df_train = prepare_data_dachs(TRAIN_FILE_PATH)
+df_test = prepare_data_dachs(TEST_FILE_PATH)
 
 dataset = ClassifierDataset(df_train, df_test, VALIDATION_SIZE, BATCH_SIZE, BERT_VERSION, SEED_TRAIN_VALIDATION_SPLIT)
 
 # ## Model
 
-model = GeneralClassifier(dataset = dataset,
-                          learning_rate = LEARNING_RATE,
-                          epochs = EPOCHS,
-                          best_model_file = BEST_MODEL_FILE,
-                          device = DEVICE)
+model = GeneralClassifier(dataset=dataset,
+                          learning_rate=LEARNING_RATE,
+                          epochs=EPOCHS,
+                          best_model_file=MODEL_FILE_PATH,
+                          device=DEVICE,
+                          log_path=MODEL_LOGS_PATH)
 
 # ### Training
 
