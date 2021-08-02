@@ -5,6 +5,7 @@ import torch.nn as nn
 from sklearn.metrics import classification_report
 from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 from transformers import AutoModel, AdamW
 
 from classifier.classifier_architecture import ClassifierArchitecture
@@ -17,7 +18,7 @@ class GeneralClassifier(object):
     """
 
     def __init__(self, dataset: ClassifierDataset, learning_rate: float, epochs: int, best_model_file: str,
-                 device: str):
+                 device: str, log_path: str):
         """
         Class initializer.
         Args:
@@ -26,6 +27,7 @@ class GeneralClassifier(object):
             epochs: Number of epochs to train.
             best_model_file: Output path of the trained model.
             device: Device in which perform the calculations.
+            log_path: Path to store the TensorBoard logs.
         """
 
         self.dataset = dataset
@@ -37,6 +39,7 @@ class GeneralClassifier(object):
         self.model = self.define_architecture().to(device)
         self.optimizer = self.define_optimizer()
         self.loss_function = self.define_loss_function()
+        self.writer = SummaryWriter(log_path)
 
     def define_architecture(self) -> ClassifierArchitecture:
         """
@@ -69,9 +72,11 @@ class GeneralClassifier(object):
         weights = weights.to(self.device)
         return nn.NLLLoss(weight=weights)
 
-    def _train_epoch(self) -> float:
+    def _train_epoch(self, epoch: int) -> float:
         """
         Performs the training for one epoch. Updates the weights and returns the current loss.
+        Args:
+            epoch: Number of the training epoch.
         Returns:
             Average loss after training the epoch.
         """
@@ -119,8 +124,10 @@ class GeneralClassifier(object):
         best_valid_loss = float("inf")
         for epoch in range(self.epochs):
             print(f"\n Epoch {epoch + 1} / {self.epochs}")
-            train_loss = self._train_epoch()
+            train_loss = self._train_epoch(epoch)
+            self.writer.add_scalar("Loss/train", train_loss, epoch)
             validation_loss = self._evaluate_epoch()
+            self.writer.add_scalar("Loss/validation", validation_loss, epoch)
             if validation_loss < best_valid_loss:
                 best_valid_loss = validation_loss
                 torch.save(self.model.state_dict(), self.best_model_file)
@@ -154,4 +161,6 @@ class GeneralClassifier(object):
         predictions = self._predict()
         predictions_final = np.argmax(predictions, axis=1)
         test_labels = self.dataset.test_injector.tensor_datapack.labels
-        print(classification_report(test_labels, predictions_final))
+        report = classification_report(test_labels, predictions_final)
+        self.writer.add_text("Classification report", report)
+        print(report)
